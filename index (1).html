@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Employee Profile — ต้นแบบ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --navy:#0A2F6B; --navy2:#1546A0; --gold:#1E7BE0; --gold-soft:#D3E5FF; --alert:#F5B301;
+    --bg:#EEF3FA; --panel:#FFFFFF; --ink:#14233B; --ink-soft:#5B6B84;
+    --teal:#0E7C66; --rose:#C2410C; --line:#D6E0EE;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0B1424; --panel:#111E33; --ink:#E6EEFA; --ink-soft:#93A4C0; --line:#22324D; --gold-soft:#9CC4FF; } }
+  :root[data-theme="dark"]{ --bg:#0B1424; --panel:#111E33; --ink:#E6EEFA; --ink-soft:#93A4C0; --line:#22324D; --gold-soft:#9CC4FF; }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+  body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Noto Sans Thai',sans-serif;}
+  .app{display:flex;flex-direction:column;height:100%;}
+
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px 20px;padding-top:calc(16px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:4px solid var(--alert);}
+  header .brand{font-weight:700;font-size:1.05rem;}
+  header .brand span{color:var(--gold-soft);font-weight:500;font-size:.8rem;display:block;margin-top:2px;}
+  header .kpis{display:flex;gap:22px;flex-wrap:wrap;}
+  header .kpi b{display:block;font-size:1.2rem;color:var(--gold-soft);}
+  header .kpi span{font-size:.72rem;color:#B7CBEA;}
+
+  .main{flex:1;display:flex;min-height:0;overflow:hidden;}
+  .sidebar{width:270px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;}
+  .search{padding:12px;border-bottom:1px solid var(--line);}
+  .search input{width:100%;padding:9px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;font-size:.88rem;}
+  .emp-item{padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s;}
+  .emp-item:hover{background:var(--bg);}
+  .emp-item.active{background:var(--gold-soft);}
+  :root[data-theme="dark"] .emp-item.active{background:#163559;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .emp-item.active{background:#163559;} }
+  .emp-item .nm{font-weight:600;font-size:.92rem;}
+  .emp-item .pos{font-size:.76rem;color:var(--ink-soft);margin-top:2px;}
+  .emp-item .dept{font-size:.7rem;color:var(--teal);margin-top:3px;font-weight:600;}
+
+  .content{flex:1;overflow-y:auto;padding:22px 26px;}
+  .profile-head{display:flex;gap:16px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
+  .avatar{width:58px;height:58px;border-radius:50%;background:var(--navy);color:var(--gold-soft);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.2rem;flex-shrink:0;}
+  .profile-head h2{margin:0;font-size:1.3rem;}
+  .profile-head .sub{color:var(--ink-soft);font-size:.85rem;margin-top:3px;}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto;}
+  .tab{padding:9px 14px;font-size:.85rem;font-weight:600;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+  .tab.active{color:var(--navy);border-bottom-color:var(--gold);}
+  :root[data-theme="dark"] .tab.active{color:var(--gold-soft);}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tab.active{color:var(--gold-soft);} }
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;}
+  .card b{display:block;font-size:1.3rem;color:var(--navy);}
+  :root[data-theme="dark"] .card b{color:var(--gold-soft);}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .card b{color:var(--gold-soft);} }
+  .card span{font-size:.75rem;color:var(--ink-soft);}
+
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:.85rem;}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);}
+  th{background:var(--navy);color:#fff;font-weight:600;font-size:.78rem;}
+  tr:last-child td{border-bottom:none;}
+  .tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:600;}
+  .tag.ok{background:#DDF3EA;color:var(--teal);}
+  .tag.warn{background:#FDE8DC;color:var(--rose);}
+  :root[data-theme="dark"] .tag.ok{background:#12382E;} :root[data-theme="dark"] .tag.warn{background:#3E2314;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tag.ok{background:#12382E;} :root:not([data-theme="light"]) .tag.warn{background:#3E2314;} }
+
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .bar-row .lbl{width:110px;font-size:.78rem;color:var(--ink-soft);flex-shrink:0;}
+  .bar-track{flex:1;height:10px;background:var(--line);border-radius:6px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--gold);border-radius:6px;}
+  .bar-row .val{width:40px;text-align:right;font-size:.78rem;color:var(--ink-soft);}
+
+  .pane{display:none;}
+  .pane.active{display:block;}
+  .note{font-size:.78rem;color:var(--ink-soft);margin-top:14px;padding:10px 12px;background:var(--panel);border:1px dashed var(--line);border-radius:6px;}
+  @media(max-width:700px){ .sidebar{position:fixed;left:-280px;top:0;bottom:0;z-index:10;transition:left .2s;height:100%;} .sidebar.open{left:0;} .menu-btn{display:inline-block;} .content{padding:16px;} }
+  .menu-btn{display:none;background:none;border:1px solid var(--gold-soft);color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:.85rem;}
+
+  .import{padding:12px;border-bottom:1px solid var(--line);background:var(--bg);}
+  .import summary{cursor:pointer;font-size:.82rem;font-weight:600;color:var(--teal);}
+  .import .body{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+  .import label{font-size:.72rem;color:var(--ink-soft);display:block;margin-bottom:3px;}
+  .import input[type=file]{font-size:.72rem;width:100%;}
+  .import .dl{font-size:.72rem;color:var(--teal);text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;}
+  .import .reset{font-size:.72rem;color:var(--rose);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;font-family:inherit;}
+  .import .status{font-size:.7rem;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+      <div class="brand">Employee Profile <span style="color:var(--gold-soft)">MVP</span> <span>ต้นแบบสำหรับกลุ่มบริษัทน้ำตาล · เฉพาะ 3 โมดูลที่ข้อมูลพร้อมแล้ว</span></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><b id="kpi-total">–</b><span>พนักงานทั้งหมด</span></div>
+      <div class="kpi"><b id="kpi-tenure">–</b><span>อายุงานเฉลี่ย (ปี)</span></div>
+      <div class="kpi"><b id="kpi-attend">–</b><span>อัตรามาทำงานเฉลี่ย</span></div>
+      <div class="kpi"><b id="kpi-train">–</b><span>ชม.อบรมเฉลี่ย/ปี</span></div>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="sidebar">
+      <details class="import">
+        <summary>📥 นำเข้าข้อมูลจริง (CSV)</summary>
+        <div class="body">
+          <div>
+            <label>1) ไฟล์พนักงาน + ขาดลามาสาย</label>
+            <input type="file" accept=".csv" id="fileEmp" onchange="handleEmpCsv(this.files[0])">
+          </div>
+          <div>
+            <label>2) ไฟล์ฝึกอบรม (จับคู่ด้วยชื่อ-สกุล)</label>
+            <input type="file" accept=".csv" id="fileTrain" onchange="handleTrainCsv(this.files[0])">
+          </div>
+          <button class="dl" onclick="downloadSample('emp')">⬇ ดาวน์โหลดไฟล์ตัวอย่าง 1</button>
+          <button class="dl" onclick="downloadSample('train')">⬇ ดาวน์โหลดไฟล์ตัวอย่าง 2</button>
+          <button class="reset" onclick="resetSample()">↺ กลับไปใช้ข้อมูลตัวอย่างเดิม</button>
+          <div class="status" id="importStatus"></div>
+        </div>
+      </details>
+      <div class="search"><input id="search" placeholder="ค้นหาชื่อ หรือ แผนก..." oninput="renderList()"></div>
+      <div id="emp-list"></div>
+    </div>
+
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+const employees = [
+  { id:1, name:"สมชาย ศรีสุข", pos:"หัวหน้าแผนกหีบอ้อย", dept:"โรงงานผลิต", hire:"2016-03-01", contract:"รายเดือน", startPos:"พนักงานหีบอ้อย", salaryStart:14000,
+    salary:[["2016","14,000","บรรจุใหม่"],["2018","16,500","ปรับประจำปี"],["2021","19,800","เลื่อนตำแหน่ง"],["2024","23,500","ปรับประจำปี"]],
+    promo:[["2016","พนักงานหีบอ้อย","โรงงานผลิต"],["2019","หัวหน้ากะ","โรงงานผลิต"],["2021","หัวหน้าแผนกหีบอ้อย","โรงงานผลิต"]],
+    attend:{present:96,late:6,absent:2,leave:8}, train:[["Safety in Sugar Mill","2023","16 ชม."],["Leadership for Supervisor","2024","24 ชม."]] },
+  { id:2, name:"วิภา จันทร์เพ็ญ", pos:"นักวิเคราะห์ HR", dept:"ทรัพยากรบุคคล", hire:"2020-06-15", contract:"รายเดือน", startPos:"เจ้าหน้าที่ HR", salaryStart:18000,
+    salary:[["2020","18,000","บรรจุใหม่"],["2022","20,500","ปรับประจำปี"],["2024","22,900","ปรับพิเศษ"]],
+    promo:[["2020","เจ้าหน้าที่ HR","ทรัพยากรบุคคล"],["2023","นักวิเคราะห์ HR","ทรัพยากรบุคคล"]],
+    attend:{present:99,late:1,absent:0,leave:4}, train:[["HRIS & People Analytics","2023","20 ชม."],["PDPA Compliance","2024","8 ชม."]] },
+  { id:3, name:"ประเสริฐ วงศ์คำ", pos:"ช่างซ่อมบำรุง", dept:"ซ่อมบำรุง", hire:"2013-11-20", contract:"รายวัน", startPos:"ช่างซ่อมบำรุง", salaryStart:12000,
+    salary:[["2013","12,000","บรรจุใหม่"],["2017","15,200","ปรับประจำปี"],["2021","17,600","ปรับประจำปี"],["2024","19,000","ปรับประจำปี"]],
+    promo:[["2013","ช่างซ่อมบำรุง","ซ่อมบำรุง"]],
+    attend:{present:88,late:14,absent:9,leave:12}, train:[["Machine Safety","2022","12 ชม."]] },
+  { id:4, name:"อรทัย บุญมา", pos:"เจ้าหน้าที่ควบคุมคุณภาพ", dept:"QC/QA", hire:"2019-02-10", contract:"รายเดือน", startPos:"ผู้ช่วย QC", salaryStart:16500,
+    salary:[["2019","16,500","บรรจุใหม่"],["2021","18,700","ปรับประจำปี"],["2023","20,900","ปรับประจำปี"]],
+    promo:[["2019","ผู้ช่วย QC","QC/QA"],["2022","เจ้าหน้าที่ควบคุมคุณภาพ","QC/QA"]],
+    attend:{present:97,late:3,absent:1,leave:5}, train:[["ISO 9001 Internal Audit","2023","16 ชม."],["Lab Safety","2024","8 ชม."]] },
+  { id:5, name:"ธนกร ทองอยู่", pos:"พนักงานคลังสินค้า", dept:"โลจิสติกส์", hire:"2022-08-01", contract:"รายวัน", startPos:"พนักงานคลังสินค้า", salaryStart:13500,
+    salary:[["2022","13,500","บรรจุใหม่"],["2024","14,800","ปรับประจำปี"]],
+    promo:[["2022","พนักงานคลังสินค้า","โลจิสติกส์"]],
+    attend:{present:91,late:10,absent:6,leave:6}, train:[["Forklift Safety","2023","8 ชม."]] },
+  { id:6, name:"กัญญา ศรีวิไล", pos:"ผู้จัดการแผนกบัญชี", dept:"บัญชี-การเงิน", hire:"2011-01-10", contract:"รายเดือน", startPos:"นักบัญชี", salaryStart:20000,
+    salary:[["2011","20,000","บรรจุใหม่"],["2015","25,000","ปรับประจำปี"],["2019","31,000","เลื่อนตำแหน่ง"],["2024","38,500","ปรับประจำปี"]],
+    promo:[["2011","นักบัญชี","บัญชี-การเงิน"],["2016","หัวหน้าทีมบัญชี","บัญชี-การเงิน"],["2019","ผู้จัดการแผนกบัญชี","บัญชี-การเงิน"]],
+    attend:{present:98,late:2,absent:0,leave:7}, train:[["Financial Reporting Update","2023","16 ชม."],["Tax Compliance","2024","12 ชม."]] },
+];
+
+let currentId = employees[0].id;
+let currentTab = "overview";
+const defaultEmployees = JSON.parse(JSON.stringify(employees));
+
+const EMP_HEADERS = ["ชื่อ-สกุล","ตำแหน่ง","แผนก","วันที่บรรจุ","ประเภทสัญญาจ้าง","ตำแหน่งเริ่มต้น","อัตรามาทำงาน(%)","มาสาย(ครั้ง/ปี)","ขาดงาน(ครั้ง/ปี)","ลา(วัน/ปี)"];
+const TRAIN_HEADERS = ["ชื่อ-สกุล","หลักสูตร","ปี","ชั่วโมง"];
+
+function setStatus(msg, isErr){
+  const s = document.getElementById("importStatus");
+  s.textContent = msg;
+  s.style.color = isErr ? "var(--rose)" : "var(--teal)";
+}
+
+function toCsv(rows){
+  return rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+}
+
+function downloadSample(kind){
+  let rows, filename;
+  if(kind==="emp"){
+    rows = [EMP_HEADERS, ...defaultEmployees.map(e=>[e.name,e.pos,e.dept,e.hire,e.contract,e.startPos,e.attend.present,e.attend.late,e.attend.absent,e.attend.leave])];
+    filename = "ตัวอย่าง-พนักงาน-ขาดลามาสาย.csv";
+  } else {
+    rows = [TRAIN_HEADERS];
+    defaultEmployees.forEach(e => e.train.forEach(t => rows.push([e.name, t[0], t[1], parseInt(t[2])])));
+    filename = "ตัวอย่าง-ฝึกอบรม.csv";
+  }
+  const blob = new Blob(["\uFEFF" + toCsv(rows)], {type:"text/csv;charset=utf-8;"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function handleEmpCsv(file){
+  if(!file) return;
+  Papa.parse(file, { header:true, skipEmptyLines:true, complete: res => {
+    const missing = EMP_HEADERS.filter(h => !(h in (res.data[0]||{})));
+    if(missing.length){ setStatus("คอลัมน์ไม่ตรง ขาด: " + missing.join(", "), true); return; }
+    const oldTrain = {};
+    employees.forEach(e => oldTrain[e.name] = e.train);
+    employees.length = 0;
+    res.data.forEach((row, i) => {
+      employees.push({
+        id: i+1, name: row["ชื่อ-สกุล"], pos: row["ตำแหน่ง"], dept: row["แผนก"],
+        hire: row["วันที่บรรจุ"], contract: row["ประเภทสัญญาจ้าง"], startPos: row["ตำแหน่งเริ่มต้น"],
+        attend: { present: Number(row["อัตรามาทำงาน(%)"])||0, late: Number(row["มาสาย(ครั้ง/ปี)"])||0, absent: Number(row["ขาดงาน(ครั้ง/ปี)"])||0, leave: Number(row["ลา(วัน/ปี)"])||0 },
+        train: oldTrain[row["ชื่อ-สกุล"]] || []
+      });
+    });
+    currentId = employees[0]?.id;
+    setStatus(`นำเข้าพนักงาน ${employees.length} คนสำเร็จ`, false);
+    renderKPIs(); renderList(); renderContent();
+  }, error: () => setStatus("อ่านไฟล์ไม่สำเร็จ ตรวจสอบรูปแบบ CSV", true) });
+}
+
+function handleTrainCsv(file){
+  if(!file) return;
+  Papa.parse(file, { header:true, skipEmptyLines:true, complete: res => {
+    const missing = TRAIN_HEADERS.filter(h => !(h in (res.data[0]||{})));
+    if(missing.length){ setStatus("คอลัมน์ไม่ตรง ขาด: " + missing.join(", "), true); return; }
+    employees.forEach(e => e.train = []);
+    let matched = 0, unmatched = 0;
+    res.data.forEach(row => {
+      const e = employees.find(x => x.name === row["ชื่อ-สกุล"]);
+      if(e){ e.train.push([row["หลักสูตร"], row["ปี"], row["ชั่วโมง"] + " ชม."]); matched++; }
+      else unmatched++;
+    });
+    setStatus(`นำเข้าอบรม ${matched} รายการ` + (unmatched ? ` (ไม่พบชื่อ ${unmatched} รายการ — ตรวจว่าชื่อตรงกับไฟล์ที่ 1)` : ""), unmatched>0);
+    renderKPIs(); renderContent();
+  }, error: () => setStatus("อ่านไฟล์ไม่สำเร็จ ตรวจสอบรูปแบบ CSV", true) });
+}
+
+function resetSample(){
+  employees.length = 0;
+  JSON.parse(JSON.stringify(defaultEmployees)).forEach(e => employees.push(e));
+  currentId = employees[0].id;
+  document.getElementById("fileEmp").value = "";
+  document.getElementById("fileTrain").value = "";
+  setStatus("กลับไปใช้ข้อมูลตัวอย่างเดิมแล้ว", false);
+  renderKPIs(); renderList(); renderContent();
+}
+
+function initials(name){ const p = name.split(" "); return (p[0][0]||"") + (p[1]?p[1][0]:""); }
+function tenureYears(hire){ return ((new Date() - new Date(hire)) / (1000*60*60*24*365.25)).toFixed(1); }
+
+function renderKPIs(){
+  const total = employees.length;
+  const avgTenure = (employees.reduce((s,e)=>s+parseFloat(tenureYears(e.hire)),0)/total).toFixed(1);
+  const avgAttend = (employees.reduce((s,e)=>s+e.attend.present,0)/total).toFixed(0);
+  const avgTrain = (employees.reduce((s,e)=>s+e.train.reduce((a,t)=>a+parseInt(t[2]),0),0)/total).toFixed(0);
+  document.getElementById("kpi-total").textContent = total;
+  document.getElementById("kpi-tenure").textContent = avgTenure;
+  document.getElementById("kpi-attend").textContent = avgAttend + "%";
+  document.getElementById("kpi-train").textContent = avgTrain + " ชม.";
+}
+
+function renderList(){
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  const wrap = document.getElementById("emp-list");
+  wrap.innerHTML = "";
+  employees.filter(e => e.name.toLowerCase().includes(q) || e.dept.toLowerCase().includes(q) || e.pos.toLowerCase().includes(q))
+    .forEach(e=>{
+      const d = document.createElement("div");
+      d.className = "emp-item" + (e.id===currentId ? " active" : "");
+      d.innerHTML = `<div class="nm">${e.name}</div><div class="pos">${e.pos}</div><div class="dept">${e.dept}</div>`;
+      d.onclick = ()=>{ currentId = e.id; currentTab = "overview"; renderList(); renderContent(); document.querySelector('.sidebar').classList.remove('open'); };
+      wrap.appendChild(d);
+    });
+}
+
+function tabsHtml(){
+  const tabs = [["overview","การเข้าเป็นพนักงาน"],["attend","ขาดลามาสาย"],["train","ฝึกอบรม"]];
+  return `<div class="tabs">${tabs.map(t=>`<div class="tab${t[0]===currentTab?' active':''}" onclick="currentTab='${t[0]}';renderContent();">${t[1]}</div>`).join("")}</div>
+    <div class="note" style="margin-top:-8px;margin-bottom:18px;">โมดูล <b>เงินเดือน</b> และ <b>เลื่อนตำแหน่ง</b> จะเปิดใช้ในเฟสถัดไป เมื่อข้อมูลพร้อมมากกว่านี้ (ดูผลประเมินความพร้อมข้อมูล)</div>`;
+}
+
+function renderContent(){
+  const e = employees.find(x=>x.id===currentId);
+  const c = document.getElementById("content");
+  let body = "";
+
+  if(currentTab==="overview"){
+    body = `
+      <div class="cards">
+        <div class="card"><b>${e.hire}</b><span>วันที่บรรจุ</span></div>
+        <div class="card"><b>${tenureYears(e.hire)} ปี</b><span>อายุงาน</span></div>
+        <div class="card"><b>${e.contract}</b><span>ประเภทสัญญาจ้าง</span></div>
+        <div class="card"><b>${e.startPos}</b><span>ตำแหน่งเริ่มต้น</span></div>
+      </div>
+      <table><tr><th>รายการ</th><th>ข้อมูล</th></tr>
+        <tr><td>แผนก/หน่วยงาน</td><td>${e.dept}</td></tr>
+        <tr><td>ตำแหน่งปัจจุบัน</td><td>${e.pos}</td></tr>
+        <tr><td>ประเภทสัญญาจ้าง</td><td>${e.contract}</td></tr>
+        <tr><td>วันที่บรรจุ</td><td>${e.hire}</td></tr>
+      </table>`;
+  } else if(currentTab==="attend"){
+    const a = e.attend;
+    body = `
+      <div class="bar-row"><div class="lbl">มาทำงาน</div><div class="bar-track"><div class="bar-fill" style="width:${a.present}%"></div></div><div class="val">${a.present}%</div></div>
+      <div class="bar-row"><div class="lbl">มาสาย (ครั้ง/ปี)</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(a.late*4,100)}%"></div></div><div class="val">${a.late}</div></div>
+      <div class="bar-row"><div class="lbl">ขาดงาน (ครั้ง/ปี)</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(a.absent*6,100)}%"></div></div><div class="val">${a.absent}</div></div>
+      <div class="bar-row"><div class="lbl">ลา (วัน/ปี)</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(a.leave*4,100)}%"></div></div><div class="val">${a.leave}</div></div>
+      <div class="note">${a.absent>5 || a.late>10 ? '<span class="tag warn">ควรติดตาม</span> แนวโน้มขาด/สายสูงกว่าค่าเฉลี่ย' : '<span class="tag ok">ปกติ</span> วินัยการทำงานอยู่ในเกณฑ์ดี'}</div>`;
+  } else if(currentTab==="train"){
+    body = `<table><tr><th>หลักสูตร</th><th>ปีที่อบรม</th><th>ชั่วโมง</th></tr>
+      ${e.train.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("")}</table>
+      <div class="note">รวม ${e.train.reduce((s,t)=>s+parseInt(t[2]),0)} ชั่วโมงในระบบ (ข้อมูลตัวอย่าง)</div>`;
+  }
+
+  c.innerHTML = `
+    <div class="profile-head">
+      <div class="avatar">${initials(e.name)}</div>
+      <div><h2>${e.name}</h2><div class="sub">${e.pos} · ${e.dept}</div></div>
+    </div>
+    ${tabsHtml()}
+    ${body}
+  `;
+}
+
+renderKPIs();
+renderList();
+renderContent();
+</script>
+</body>
+</html>
