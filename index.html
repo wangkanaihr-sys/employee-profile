@@ -91,6 +91,20 @@
   .import .dl{font-size:.72rem;color:var(--teal);text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;}
   .import .reset{font-size:.72rem;color:var(--rose);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;font-family:inherit;}
   .import .status{font-size:.7rem;color:var(--ink-soft);}
+
+  .menu{padding-top:6px;}
+  .menu .group{font-size:.75rem;color:var(--ink-soft);padding:16px 16px 6px;font-weight:600;}
+  .menu .item{display:flex;width:100%;align-items:center;gap:10px;padding:10px 16px;border:0;border-left:3px solid transparent;background:none;color:var(--ink);font:inherit;font-size:.88rem;cursor:pointer;text-align:left;}
+  .menu .item:hover:not(.off){background:var(--bg);}
+  .menu .item:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
+  .menu .item.active{background:var(--gold-soft);border-left-color:var(--gold);font-weight:600;}
+  .menu .item.off{opacity:.55;cursor:not-allowed;}
+  .menu .badge{margin-left:auto;background:#E5484D;color:#fff;border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:600;}
+  .menu .badge.zero{background:var(--line);color:var(--ink-soft);}
+  .menu .soon{margin-left:auto;font-size:.66rem;padding:1px 8px;border-radius:20px;background:var(--line);color:var(--ink-soft);}
+  :root[data-theme="dark"] .menu .item.active{background:#163559;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .menu .item.active{background:#163559;} }
+  .sec{font-size:.95rem;margin:22px 0 10px;}
 </style>
 </head>
 <body>
@@ -110,6 +124,10 @@
 
   <div class="main">
     <div class="sidebar">
+      <nav class="menu"><button class="item" data-k="dash" onclick="go('dash')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>ภาพรวมองค์กร</button><div class="group">ข้อมูลพนักงาน</div><button class="item" data-k="overview" onclick="go('profile','overview')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0"/></svg>การเข้าเป็นพนักงาน</button><button class="item" data-k="attend" onclick="go('profile','attend')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"/></svg>ขาดลามาสาย<span class="badge" id="nav-flag">0</span></button><button class="item" data-k="train" onclick="go('profile','train')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 19a2 2 0 012-2h13"/></svg>ฝึกอบรม</button><div class="group">เฟสถัดไป</div><button class="item off" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h16a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2zM3 7l14-3v3M16 14h2"/></svg>เงินเดือน<span class="soon">เร็ว ๆ นี้</span></button><button class="item off" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>เลื่อนตำแหน่ง<span class="soon">เร็ว ๆ นี้</span></button><div class="group">เลือกพนักงาน</div></nav>
+      <div class="search"><input id="search" placeholder="ค้นหาชื่อ หรือ แผนก..." oninput="renderList()"></div>
+      <div id="emp-list"></div>
+      <div class="menu"><div class="group">จัดการข้อมูล</div></div>
       <details class="import">
         <summary>📥 นำเข้าข้อมูลจริง (CSV)</summary>
         <div class="body">
@@ -127,8 +145,6 @@
           <div class="status" id="importStatus"></div>
         </div>
       </details>
-      <div class="search"><input id="search" placeholder="ค้นหาชื่อ หรือ แผนก..." oninput="renderList()"></div>
-      <div id="emp-list"></div>
     </div>
 
     <div class="content" id="content"></div>
@@ -165,6 +181,7 @@ const employees = [
 
 let currentId = employees[0].id;
 let currentTab = "overview";
+let view = "dash";
 const defaultEmployees = JSON.parse(JSON.stringify(employees));
 
 const EMP_HEADERS = ["ชื่อ-สกุล","ตำแหน่ง","แผนก","วันที่บรรจุ","ประเภทสัญญาจ้าง","ตำแหน่งเริ่มต้น","อัตรามาทำงาน(%)","มาสาย(ครั้ง/ปี)","ขาดงาน(ครั้ง/ปี)","ลา(วัน/ปี)"];
@@ -267,11 +284,37 @@ function renderList(){
   employees.filter(e => e.name.toLowerCase().includes(q) || e.dept.toLowerCase().includes(q) || e.pos.toLowerCase().includes(q))
     .forEach(e=>{
       const d = document.createElement("div");
-      d.className = "emp-item" + (e.id===currentId ? " active" : "");
+      d.className = "emp-item" + (view==="profile" && e.id===currentId ? " active" : "");
       d.innerHTML = `<div class="nm">${e.name}</div><div class="pos">${e.pos}</div><div class="dept">${e.dept}</div>`;
-      d.onclick = ()=>{ currentId = e.id; currentTab = "overview"; renderList(); renderContent(); document.querySelector('.sidebar').classList.remove('open'); };
+      d.onclick = ()=>{ currentId = e.id; currentTab = "overview"; view = "profile"; renderList(); renderContent(); document.querySelector('.sidebar').classList.remove('open'); };
       wrap.appendChild(d);
     });
+}
+
+const isFlag = e => e.attend.absent>5 || e.attend.late>10;
+function go(v,t){ view=v; if(t) currentTab=t; renderList(); renderContent(); document.querySelector('.sidebar').classList.remove('open'); }
+function openEmp(id,t){ currentId=id; view="profile"; go("profile",t); }
+function renderNav(){
+  const k = view==="dash" ? "dash" : currentTab;
+  document.querySelectorAll(".menu .item[data-k]").forEach(b=>b.classList.toggle("active", b.dataset.k===k));
+  const n = employees.filter(isFlag).length, bd = document.getElementById("nav-flag");
+  bd.textContent = n; bd.classList.toggle("zero", n===0);
+}
+function dashHtml(){
+  const by = {}; employees.forEach(e=>{ (by[e.dept]=by[e.dept]||[]).push(e); });
+  const rows = Object.keys(by).map(d=>{ const g=by[d], n=g.length;
+    const at=(g.reduce((s,e)=>s+e.attend.present,0)/n).toFixed(0);
+    const tr=(g.reduce((s,e)=>s+e.train.reduce((a,t)=>a+parseInt(t[2]),0),0)/n).toFixed(0);
+    return `<tr><td>${d}</td><td>${n}</td><td>${at}%</td><td>${tr} ชม.</td></tr>`; }).join("");
+  const fl = employees.filter(isFlag);
+  const watch = fl.length ? fl.map(e=>`<tr style="cursor:pointer" onclick="openEmp(${e.id},'attend')"><td>${e.name}</td><td>${e.dept}</td><td>สาย ${e.attend.late} · ขาด ${e.attend.absent}</td><td><span class="tag warn">ควรติดตาม</span></td></tr>`).join("")
+    : `<tr><td colspan="4"><span class="tag ok">ปกติ</span> ไม่มีรายการที่ต้องติดตาม</td></tr>`;
+  return `<div class="profile-head"><div><h2>ภาพรวมองค์กร</h2><div class="sub">สรุปจากข้อมูลพนักงาน ${employees.length} คน</div></div></div>
+    <h3 class="sec">สรุปตามแผนก</h3>
+    <table><tr><th>แผนก</th><th>พนักงาน</th><th>มาทำงานเฉลี่ย</th><th>อบรมเฉลี่ย/คน</th></tr>${rows}</table>
+    <h3 class="sec">พนักงานที่ควรติดตามการเข้างาน</h3>
+    <table><tr><th>ชื่อ</th><th>แผนก</th><th>สถิติ/ปี</th><th>สถานะ</th></tr>${watch}</table>
+    <div class="note">กดที่ชื่อเพื่อดูรายละเอียดขาดลามาสาย เกณฑ์: มาสายเกิน 10 ครั้ง หรือขาดงานเกิน 5 ครั้งต่อปี</div>`;
 }
 
 function tabsHtml(){
@@ -283,6 +326,7 @@ function tabsHtml(){
 function renderContent(){
   const e = employees.find(x=>x.id===currentId);
   const c = document.getElementById("content");
+  renderNav(); if(view==="dash"){ c.innerHTML = dashHtml(); return; }
   let body = "";
 
   if(currentTab==="overview"){
